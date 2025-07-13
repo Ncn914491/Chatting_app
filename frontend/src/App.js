@@ -72,7 +72,11 @@ function App() {
     if (socketRef.current) return;
     
     socketRef.current = io(API_BASE_URL, {
-      transports: ['websocket', 'polling']
+      transports: ['polling', 'websocket'], // Start with polling, then upgrade
+      upgrade: true,
+      rememberUpgrade: true,
+      timeout: 20000,
+      forceNew: true
     });
     
     socketRef.current.on('connect', () => {
