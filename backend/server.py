@@ -368,18 +368,55 @@ async def search_users(q: str, current_user_id: str = Depends(verify_token)):
     
     return [{"user_id": user["user_id"], "username": user["username"]} for user in users]
 
-@app.get("/api/me")
-async def get_current_user(current_user_id: str = Depends(verify_token)):
-    user = users_collection.find_one({"user_id": current_user_id})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "user_id": user["user_id"],
-        "username": user["username"],
-        "created_at": user["created_at"],
-        "last_active": user["last_active"]
-    }
+@app.post("/api/send-message")
+async def send_message_api(message_data: MessageSend, current_user_id: str = Depends(verify_token)):
+    """Fallback API endpoint for sending messages when WebSocket is not available"""
+    try:
+        # Save message to database
+        message_id = str(uuid.uuid4())
+        message_doc = {
+            "message_id": message_id,
+            "sender_id": current_user_id,
+            "recipient_id": message_data.recipient_id,
+            "content": message_data.content,
+            "timestamp": datetime.utcnow(),
+            "is_read": False
+        }
+        messages_collection.insert_one(message_doc)
+        
+        # Update or create conversation
+        conversation_id = get_or_create_conversation(current_user_id, message_data.recipient_id)
+        conversations_collection.update_one(
+            {"conversation_id": conversation_id},
+            {
+                "$set": {
+                    "last_message": message_data.content,
+                    "last_message_time": datetime.utcnow(),
+                    "last_sender_id": current_user_id
+                }
+            }
+        )
+        
+        # Try to notify via WebSocket if connected
+        if message_data.recipient_id in user_sockets:
+            recipient_socket = user_sockets[message_data.recipient_id]
+            await sio.emit('new_message', {
+                'message_id': message_id,
+                'sender_id': current_user_id,
+                'content': message_data.content,
+                'timestamp': message_doc['timestamp'].isoformat(),
+                'conversation_id': conversation_id
+            }, room=recipient_socket)
+        
+        return {
+            "message_id": message_id,
+            "timestamp": message_doc['timestamp'],
+            "conversation_id": conversation_id,
+            "status": "sent"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Health check
 @app.get("/api/health")
