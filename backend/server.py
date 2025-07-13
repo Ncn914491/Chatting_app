@@ -42,10 +42,13 @@ security = HTTPBearer()
 SECRET_KEY = "your-secret-key-for-jwt"
 ALGORITHM = "HS256"
 
-# Socket.IO setup
+# Socket.IO setup with better proxy support
 sio = socketio.AsyncServer(
     cors_allowed_origins="*",
-    async_mode="asgi"
+    async_mode="asgi",
+    transports=['polling', 'websocket'],  # Start with polling, upgrade to websocket
+    engineio_logger=True,
+    socketio_logger=True
 )
 
 socket_app = socketio.ASGIApp(sio, app)
