@@ -342,13 +342,13 @@ async def get_messages(conversation_id: str, current_user_id: str = Depends(veri
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
-    # Get messages
+    # Get messages (exclude MongoDB _id field)
     messages = list(messages_collection.find({
         "$or": [
             {"sender_id": current_user_id, "recipient_id": {"$in": conversation["participants"]}},
             {"sender_id": {"$in": conversation["participants"]}, "recipient_id": current_user_id}
         ]
-    }).sort("timestamp", 1))
+    }, {"_id": 0}).sort("timestamp", 1))
     
     # Mark messages as read
     messages_collection.update_many(
