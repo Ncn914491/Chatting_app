@@ -300,8 +300,8 @@ function App() {
     setSearchResults([]);
   };
   
-  const sendMessage = () => {
-    if (!newMessage.trim() || !activeConversation || !socketRef.current) return;
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !activeConversation) return;
     
     const messageData = {
       recipient_id: activeConversation.other_user_id,
@@ -321,8 +321,34 @@ function App() {
     setMessages(prev => [...prev, tempMessage]);
     setNewMessage('');
     
-    // Send via socket
-    socketRef.current.emit('send_message', messageData);
+    try {
+      if (isSocketConnected && socketRef.current) {
+        // Send via WebSocket
+        socketRef.current.emit('send_message', messageData);
+      } else {
+        // Send via REST API fallback
+        const response = await axios.post(`${API_BASE_URL}/api/send-message`, messageData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data) {
+          // Update the temporary message with real data
+          setMessages(prev => prev.map(msg => 
+            msg.message_id === tempMessage.message_id 
+              ? { ...msg, message_id: response.data.message_id, timestamp: response.data.timestamp }
+              : msg
+          ));
+          
+          // Refresh conversations
+          loadConversations();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Remove the failed message from UI
+      setMessages(prev => prev.filter(msg => msg.message_id !== tempMessage.message_id));
+      setError('Failed to send message. Please try again.');
+    }
   };
   
   const handleKeyPress = (e) => {
