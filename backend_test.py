@@ -470,6 +470,121 @@ class ChatAppTester:
             self.log_test("Conversation Management", False, f"Error: {str(e)}")
             return False
 
+    def test_rest_api_message_sending(self):
+        """Test REST API message sending endpoint (fallback when WebSocket unavailable)"""
+        try:
+            headers = {"Authorization": f"Bearer {self.user1_token}"}
+            
+            # Test sending message via REST API
+            message_data = {
+                "recipient_id": self.user2_id,
+                "content": "Hello from REST API! This is a fallback message test."
+            }
+            
+            response = self.session.post(f"{API_URL}/send-message", json=message_data, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["message_id", "timestamp", "conversation_id", "status"]
+                
+                if all(field in data for field in required_fields):
+                    if data.get("status") == "sent":
+                        self.log_test("REST API Message Sending", True, "Message sent successfully via REST API")
+                        
+                        # Store conversation ID for verification
+                        self.conversation_id = data["conversation_id"]
+                        
+                        # Verify message was stored in database
+                        time.sleep(1)  # Brief delay to ensure database write
+                        
+                        # Get messages to verify persistence
+                        messages_response = self.session.get(f"{API_URL}/messages/{self.conversation_id}", headers=headers, timeout=10)
+                        
+                        if messages_response.status_code == 200:
+                            messages = messages_response.json()
+                            rest_message_found = any(
+                                msg.get('content') == "Hello from REST API! This is a fallback message test." 
+                                for msg in messages
+                            )
+                            
+                            if rest_message_found:
+                                self.log_test("REST API Message Persistence", True, "REST API message stored and retrieved successfully")
+                                return True
+                            else:
+                                self.log_test("REST API Message Persistence", False, "REST API message not found in database")
+                                return False
+                        else:
+                            self.log_test("REST API Message Persistence", False, f"Failed to retrieve messages: {messages_response.status_code}")
+                            return False
+                    else:
+                        self.log_test("REST API Message Sending", False, f"Unexpected status: {data.get('status')}")
+                        return False
+                else:
+                    self.log_test("REST API Message Sending", False, "Missing required fields in response")
+                    return False
+            else:
+                self.log_test("REST API Message Sending", False, f"Status code: {response.status_code}, Response: {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_test("REST API Message Sending", False, f"Error: {str(e)}")
+            return False
+
+    def test_rest_api_conversation_creation(self):
+        """Test conversation creation via REST API messaging"""
+        try:
+            # Create a third user for testing new conversation creation
+            user3_data = {
+                "username": "charlie_brown",
+                "password": "testpass789"
+            }
+            
+            response = self.session.post(f"{API_URL}/register", json=user3_data, timeout=10)
+            
+            if response.status_code == 200:
+                user3_data_response = response.json()
+                user3_id = user3_data_response["user_id"]
+                
+                # Send message to new user via REST API
+                headers = {"Authorization": f"Bearer {self.user1_token}"}
+                message_data = {
+                    "recipient_id": user3_id,
+                    "content": "Hello Charlie! This is a new conversation via REST API."
+                }
+                
+                message_response = self.session.post(f"{API_URL}/send-message", json=message_data, headers=headers, timeout=10)
+                
+                if message_response.status_code == 200:
+                    # Check if new conversation was created
+                    conversations_response = self.session.get(f"{API_URL}/conversations", headers=headers, timeout=10)
+                    
+                    if conversations_response.status_code == 200:
+                        conversations = conversations_response.json()
+                        charlie_conversation = next(
+                            (conv for conv in conversations if conv.get('other_user_id') == user3_id), 
+                            None
+                        )
+                        
+                        if charlie_conversation:
+                            self.log_test("REST API Conversation Creation", True, "New conversation created successfully via REST API")
+                            return True
+                        else:
+                            self.log_test("REST API Conversation Creation", False, "New conversation not found")
+                            return False
+                    else:
+                        self.log_test("REST API Conversation Creation", False, f"Failed to get conversations: {conversations_response.status_code}")
+                        return False
+                else:
+                    self.log_test("REST API Conversation Creation", False, f"Failed to send message: {message_response.status_code}")
+                    return False
+            else:
+                self.log_test("REST API Conversation Creation", False, f"Failed to create test user: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log_test("REST API Conversation Creation", False, f"Error: {str(e)}")
+            return False
+
     async def run_all_tests(self):
         """Run all backend tests"""
         print("=" * 60)
