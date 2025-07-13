@@ -237,14 +237,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "User Authentication System"
     - "Real-time Messaging with WebSockets"
-    - "Message Storage and Retrieval"
-    - "Conversation Management"
-    - "User Search Functionality"
-  stuck_tasks: []
-  test_all: true
-  test_priority: "high_first"
+  stuck_tasks:
+    - "Real-time Messaging with WebSockets"
+  test_all: false
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"
