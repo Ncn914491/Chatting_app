@@ -536,8 +536,9 @@ class ChatAppTester:
         """Test conversation creation via REST API messaging"""
         try:
             # Create a third user for testing new conversation creation
+            timestamp = str(int(time.time()))
             user3_data = {
-                "username": "charlie_brown",
+                "username": f"charlie_brown_{timestamp}",
                 "password": "testpass789"
             }
             
