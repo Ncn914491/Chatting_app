@@ -83,8 +83,27 @@ function App() {
     
     socketRef.current.on('connect', () => {
       console.log('Connected to server');
+      setIsSocketConnected(true);
+      setUsePolling(false);
       // Authenticate with token
       socketRef.current.emit('authenticate', { token });
+    });
+    
+    socketRef.current.on('connect_error', (error) => {
+      console.log('Socket connection failed, switching to polling mode:', error);
+      setIsSocketConnected(false);
+      setUsePolling(true);
+      // Start polling for messages
+      startMessagePolling();
+    });
+    
+    socketRef.current.on('disconnect', (reason) => {
+      console.log('Disconnected from server:', reason);
+      setIsSocketConnected(false);
+      if (reason === 'io server disconnect') {
+        // Server disconnected, try to reconnect
+        socketRef.current.connect();
+      }
     });
     
     socketRef.current.on('authenticated', (data) => {
