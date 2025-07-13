@@ -23,6 +23,8 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showUserSearch, setShowUserSearch] = useState(false);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [usePolling, setUsePolling] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({ username: '', password: '' });
