@@ -36,8 +36,10 @@ class ChatAppTester:
         self.user2_token = None
         self.user1_id = None
         self.user2_id = None
-        self.user1_username = "alice_smith"
-        self.user2_username = "bob_jones"
+        # Use timestamp to ensure unique usernames
+        timestamp = str(int(time.time()))
+        self.user1_username = f"alice_smith_{timestamp}"
+        self.user2_username = f"bob_jones_{timestamp}"
         self.conversation_id = None
         self.test_results = []
         
