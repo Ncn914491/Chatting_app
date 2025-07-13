@@ -418,6 +418,19 @@ async def send_message_api(message_data: MessageSend, current_user_id: str = Dep
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/me")
+async def get_current_user(current_user_id: str = Depends(verify_token)):
+    user = users_collection.find_one({"user_id": current_user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "user_id": user["user_id"],
+        "username": user["username"],
+        "created_at": user["created_at"],
+        "last_active": user["last_active"]
+    }
+
 # Health check
 @app.get("/api/health")
 async def health_check():
