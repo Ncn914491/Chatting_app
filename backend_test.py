@@ -617,6 +617,11 @@ class ChatAppTester:
         self.test_user_search()
         self.test_conversations_endpoint()
         
+        # REST API Message Sending Tests (Primary Focus)
+        print("\n--- REST API MESSAGE SENDING TESTING (FALLBACK MODE) ---")
+        self.test_rest_api_message_sending()
+        self.test_rest_api_conversation_creation()
+        
         # Real-time messaging tests
         print("\n--- REAL-TIME MESSAGING TESTING ---")
         await self.test_socketio_connection()
