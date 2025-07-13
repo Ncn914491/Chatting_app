@@ -437,7 +437,15 @@ function App() {
         {/* Header */}
         <div className="p-4 border-b border-gray-200 bg-blue-600 text-white">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">💬 Chats</h2>
+            <div>
+              <h2 className="text-xl font-semibold">💬 Chats</h2>
+              <div className="flex items-center mt-1">
+                <div className={`w-2 h-2 rounded-full mr-2 ${isSocketConnected ? 'bg-green-400' : usePolling ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                <span className="text-xs text-blue-200">
+                  {isSocketConnected ? 'Real-time' : usePolling ? 'Polling mode' : 'Offline'}
+                </span>
+              </div>
+            </div>
             <button
               onClick={logout}
               className="text-blue-200 hover:text-white text-sm"
