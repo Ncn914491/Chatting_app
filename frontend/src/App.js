@@ -71,6 +71,32 @@ function App() {
     }
   }, [isLoggedIn]);
   
+  // Message polling for fallback when WebSocket fails
+  const startMessagePolling = useCallback(() => {
+    if (pollingInterval.current) return;
+    
+    pollingInterval.current = setInterval(() => {
+      if (activeConversation && activeConversation.conversation_id !== `temp_${Date.now()}`) {
+        loadMessages(activeConversation.conversation_id);
+      }
+      loadConversations(); // Refresh conversation list
+    }, 3000); // Poll every 3 seconds
+  }, [activeConversation]);
+  
+  const stopMessagePolling = useCallback(() => {
+    if (pollingInterval.current) {
+      clearInterval(pollingInterval.current);
+      pollingInterval.current = null;
+    }
+  }, []);
+  
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      stopMessagePolling();
+    };
+  }, [stopMessagePolling]);
+  
   const setupSocket = useCallback(() => {
     if (socketRef.current) return;
     
