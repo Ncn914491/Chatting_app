@@ -33,6 +33,7 @@ function App() {
   // Refs
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const pollingInterval = useRef(null);
   
   // Scroll to bottom of messages
   const scrollToBottom = () => {
